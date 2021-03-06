@@ -9,7 +9,7 @@ import nltk
 from nltk import download
 from string import punctuation as pnc
 from nltk.corpus import stopwords
-
+from w2vec import *
 
 def as_list_soup(text):
     paragraphs = text.encode("utf-8")

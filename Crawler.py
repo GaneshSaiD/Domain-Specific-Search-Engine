@@ -20,11 +20,11 @@ import re
 import json
 import socket
 from tldextract import tldextract
-import ssl
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import gensim
 from gensim.models import KeyedVectors
+from w2vec import *
 
 index = 0
 mem = str(os.popen("free -t -m").readlines())
@@ -175,7 +175,6 @@ def crawling(url, PID):  # crawling plain text, and sub urls
         for script in soup(["script", "style"]):
             script.extract()
         text = soup.get_text()
-        # print(text)
         hash_x = hash(text)
         hash_update_sql = (
             "UPDATE " + DatabaseConfig.Table_Name + " SET H1 = %s  where URLs = %s"
@@ -208,6 +207,7 @@ def crawling(url, PID):  # crawling plain text, and sub urls
                             visited.append(sub_link)
                             n = n + 1
                             f.write(str(n) + " ) " + sub_link + "\n")
+                            print(sub_link)
                             IP = IP_add(sub_link)
                             inst(PID, sub_link, IP)  # insert func() for sub-urls
             if sub_link is None:

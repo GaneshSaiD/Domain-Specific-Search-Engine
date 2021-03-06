@@ -8,15 +8,14 @@ import configparser
 import json
 from config import FilesConfig
 from config import CSVColumnConfig
-from ganeshV4_26_02_2020 import w2v_model_300
+from Crawler import *
 from text_cleaning import *
-
 
 def w2v_sim(url, text):
     url = url
     text = text
 
-    save_not_crawled = "/home/s/Desktop/Not_Saved.txt"
+    save_not_crawled = "/home/ubuntu/DSSE/Not_Saved.txt"
     csv_filename = FilesConfig.csv_file_name + "Similarity.csv"
     counter = 0
     with open(csv_filename, "a") as trail_csvFile:
