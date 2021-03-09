@@ -36,7 +36,7 @@ seed_url_PID = 0
 w2v_model_300 = KeyedVectors.load_word2vec_format("model300.bin", binary=True)
 
 engine = create_engine(
-    "mysql+pymysql://{user}:{pw}@localhost/{db}".format(
+    "mysql+pymysql://{user}:{pw}@10.20.20.8/{db}".format(
         user=DatabaseConfig.user, pw=DatabaseConfig.passwd, db=DatabaseConfig.database
     )
 )
