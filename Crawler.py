@@ -37,7 +37,7 @@ w2v_model_300 = KeyedVectors.load_word2vec_format("model300.bin", binary=True)
 
 engine = create_engine(
     "mysql+pymysql://{user}:{pw}@10.20.20.8/{db}".format(
-        user=DatabaseConfig.user, pw=DatabaseConfig.passwd, db=DatabaseConfig.database
+        user=DatabaseConfig.user, pw=DatabaseConfig.passwd, db=DatabaseConfig.database, pool_size=50
     )
 )
 
@@ -69,7 +69,7 @@ def inst(pid, url, IP):
 
 
 # Getting PID for URLs
-def getPID(url):
+def getPID(url, cur):
     x = url
     sql = "SELECT SNO FROM " + DatabaseConfig.Table_Name + " WHERE URLs = %s"
     myresult = cur.execute(sql, (x,))
@@ -85,7 +85,7 @@ def getPID(url):
 
 
 # Updating visited url in database to 1
-def upd(IP_Query_result):
+def upd(IP_Query_result, cur):
     if IP_Query_result is not None:
         flag_update_sql = ""
         try:
@@ -107,12 +107,11 @@ def upd(IP_Query_result):
                 )
             )
         try:
-            pass
             cur.execute(flag_update_sql)
-            session.commit()
+            session.commit()            
         except Exception as e:
-            print(e)
             print("$$$$$$$$$$$$$$")
+            print(e)
             # pass
 
 
@@ -129,18 +128,19 @@ def upd_url_type(url):
 
 
 # Process for extraction of data and URLs
-def get_url(url, leng):
+def get_url(url):
     global seed_url_PID
-    PID = getPID(url)
+    cur2 = engine.connect()
+    PID = getPID(url, cur2)
     if PID == 0:
         ip = IP_add(url)
         PID = seed_url_PID - 1
         seed_url_PID = seed_url_PID - 1
         inst(PID, url, ip)
         upd_url_type(url)
-        PID = getPID(url)
+        PID = getPID(url, cur2)
     else:
-        PID = getPID(url)
+        PID = getPID(url, cur2)
     global index
     index = index + 1
     polite_flag = PoliteConfig.POLITE_FLAG
@@ -151,6 +151,7 @@ def get_url(url, leng):
         crawling(url, PID)
     else:
         pass
+    cur2.close()
 
 
 def crawling(url, PID):  # crawling plain text, and sub urls
@@ -210,10 +211,6 @@ def crawling(url, PID):  # crawling plain text, and sub urls
                             print(sub_link)
                             IP = IP_add(sub_link)
                             inst(PID, sub_link, IP)  # insert func() for sub-urls
-            if sub_link is None:
-                pass
-            else:
-                pass
     except Exception as e:
         pass
     gc.collect()
@@ -284,24 +281,27 @@ def thread_initializer(queue):
     # print("thread_initializer")
     thrs = []
     # Checking free memory
-    T_ind = mem.index("T")
-    mem_G = mem[T_ind + 14 : -4]
-    S1_ind = mem_G.index(" ")
-    mem_T = mem_G[0:S1_ind]
-    mem_G1 = mem_G[S1_ind + 8 :]
-    S2_ind = mem_G1.index(" ")
-    mem_U = mem_G1[0:S2_ind]
-    mem_F = mem_G1[S2_ind + 8 :]
+    #T_ind = mem.index("T")
+    #mem_G = mem[T_ind + 14 : -4]
+    #S1_ind = mem_G.index(" ")
+    #mem_T = mem_G[0:S1_ind]
+    #mem_G1 = mem_G[S1_ind + 8 :]
+    #S2_ind = mem_G1.index(" ")
+    #mem_U = mem_G1[0:S2_ind]
+    #mem_F = mem_G1[S2_ind + 8 :]
 #    print(mem_F)
     #mem_F = int(mem_F)
-
+    
     for u1 in queue:
         if u1 is not None:
             # initialising of threads
-            thr = Thread(target=get_url, args=(u1, len(queue)))
-            upd(u1)
+            thr = Thread(target=get_url, args=(u1,))
             thr.start()
-            thr.join()
+            thrs.append((u1, thr))
+    cur1 = engine.connect()
+    for thr in thrs:
+        upd(thr[0], cur1)
+        thr[1].join()
 
 
 if __name__ == "__main__":
