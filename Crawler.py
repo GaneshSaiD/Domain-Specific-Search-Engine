@@ -37,7 +37,7 @@ w2v_model_300 = KeyedVectors.load_word2vec_format("model300.bin", binary=True)
 
 engine = create_engine(
     "mysql+pymysql://{user}:{pw}@10.20.20.8/{db}".format(
-        user=DatabaseConfig.user, pw=DatabaseConfig.passwd, db=DatabaseConfig.database, pool_size=50
+        user=DatabaseConfig.user, pw=DatabaseConfig.passwd, db=DatabaseConfig.database, pool_recycle=3600
     )
 )
 
@@ -85,7 +85,7 @@ def getPID(url, cur):
 
 
 # Updating visited url in database to 1
-def upd(IP_Query_result, cur):
+def upd(IP_Query_result):
     if IP_Query_result is not None:
         flag_update_sql = ""
         try:
@@ -168,6 +168,7 @@ def crawling(url, PID):  # crawling plain text, and sub urls
         result = result.fetchone()
         sno = result[0]
         sno = str(sno)
+        print(sno)
         f.write(url + "\n*************************\n")
         f.close
         req = requests.get(url)
@@ -298,9 +299,8 @@ def thread_initializer(queue):
             thr = Thread(target=get_url, args=(u1,))
             thr.start()
             thrs.append((u1, thr))
-    cur1 = engine.connect()
     for thr in thrs:
-        upd(thr[0], cur1)
+        upd(thr[0])
         thr[1].join()
 
 
